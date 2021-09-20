@@ -1,0 +1,195 @@
+---
+title: "Data Cleansing"
+author: "Dio"
+date: "9/21/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data Cleansing
+
+Goal:
+
+1. Mampu merubah data sesuai dengan jenisnya (numeric dll).
+2. Mampu membersihkan salah input/beda input (nan, Nan, -) (beda format tanggal).
+3. Mengerti penggunaan fungsi mutate, seperate, lubridate untuk membersihkan data.
+4. Merubah format data numeric menjadi ordinal bila data unik numerik sedikit.
+5. Merubah missing value pada data numeric
+6. Membuat kolom variable dummy
+
+```{r 1. Panggil data}
+library(tidyverse)
+library(lubridate)
+df <- read_csv("https://raw.githubusercontent.com/dioariadi/dibimbing/main/data_cleansing_raw%20-%20Sheet1.csv")
+
+df_v2 <- read_csv("https://raw.githubusercontent.com/dioariadi/dibimbing/main/data_cleansing_raw%20-%20Sheet1.csv")
+```
+
+
+```{r 2. examination the data}
+glimpse(df) ## sama kayak str(df)
+head(df)
+tail(df)
+```
+
+```{r 3. Intro pipeline}
+## nested
+log(sin(exp(2))) ## susah dibaca
+# piped functions lebih enak dibaca
+2 %>% exp() %>%
+  sin() %>%
+  log()
+```
+
+```{r 4. ulangi chunk 2 tapi pake pipe ya}
+df %>% head()
+df %>% tail()
+df %>% glimpse()
+```
+
+Fungsi tidyverse
+
+1. Select
+2. Filter
+3. Mutate
+4. Seperate
+5. Lubridate (dmy,ymd, etc)
+
+```{r 5. Fungsi awal tidyverse}
+
+## cara pilih kolom
+df %>% select(1,2)
+df %>% select("customerID","MonthlyCharges")
+df %>% select(customerID,MonthlyCharges)
+df %>% select(c(customerID,MonthlyCharges))
+
+
+## cara filter/where
+
+df %>% filter(MonthlyCharges>30)
+df %>% filter(MonthlyCharges>30 & MonthlyCharges<70)
+df %>% filter(MonthlyCharges>30 | MonthlyCharges<70)
+
+## mutate untuk merubah atau membuat kolom/variable baru
+
+df %>% mutate(TotalCharges=as.numeric(TotalCharges))
+
+## menggunakan apa yang sudah dirubah dan langsung dipakai lagi
+
+df %>% mutate(TotalCharges=as.numeric(TotalCharges),
+              TotalCharges_div2=TotalCharges/2)
+
+## menggunakan pipe langsung untuk ketiga fungsi
+df %>% 
+  select(customerID,MonthlyCharges,TotalCharges) %>% 
+  mutate(TotalCharges = as.numeric(TotalCharges)) %>% 
+  filter(is.na(TotalCharges)==TRUE)
+
+
+```
+## Problem satu pada data df
+
+1. TotalCharges masih dalam bentuk numeric
+
+```{r 6. TotalCharges cek na}
+df$TotalCharges
+is.na(df$TotalCharges)
+df %>% distinct(TotalCharges)
+```
+```{r 7. Merubah TotalCharges menjadi NA}
+
+df <- df %>%
+  mutate(TotalCharges = replace(TotalCharges, TotalCharges == "na", NA),
+         TotalCharges = replace(TotalCharges, TotalCharges == "N/A", NA),
+         TotalCharges = as.numeric(TotalCharges))
+is.na(df$TotalCharges)
+
+df %>% glimpse()
+```
+
+```{r 8. Banyak jalan menuju roma}
+df_v2 %>% 
+  mutate(TotalCharges=as.numeric(TotalCharges)) %>% 
+  pull(TotalCharges)
+
+df %>% pull(TotalCharges)
+
+```
+
+## Problem dua PaymentMethod
+
+```{r 9. cek paymentMethod}
+df %>% distinct(PaymentMethod)
+is.na(df$PaymentMethod)
+```
+
+```{r 10. Membenahi paymentMethod}
+df <- df %>%
+  mutate(PaymentMethod = replace(PaymentMethod, PaymentMethod ==  "--", NA))
+is.na(df$PaymentMethod)
+df$PaymentMethod
+```
+
+
+## Problem ketiga format tanggal
+
+```{r 11. cek LastTransactionDate }
+df %>% distinct(LastTransactionDate)
+```
+```{r 12. Merubah format menjadi tanggal}
+df <- df %>%
+  mutate(LastTransactionDate=ymd(LastTransactionDate)) 
+
+df %>% select(LastTransactionDate)
+```
+## Problem keempat split customerID
+
+
+```{r 13. Cek customerID}
+df %>% distinct(customerID)
+```
+```{r 14. split customer id} 
+df %>% separate(col = customerID,into = c("customerID","uniqueCode"))
+
+df <- df %>% 
+  separate(col = customerID,into = c("customerID","uniqueCode"))
+```
+
+
+## Problem kelima merubah kolom churn no/yes jadi integer 1/0
+
+kenapa 1/0 karena saat menjalankan ML biasanya input dependent variable adalah
+1/0, apa itu dependent variable dan ML ada di next class.
+
+Memperkenalkan ifelse untuk logic yg hanya punya dua argumen
+Kalo multiple ifelse kita bisa pakai case_when
+
+```{r 15. ifelse}
+df %>% 
+  mutate(Churn=if_else(Churn=="yes",1,0)) %>% 
+  select(Churn)
+
+df <- df %>% 
+  mutate(Churn=if_else(Churn=="yes",1,0))
+```
+contoh kasus membuat variable baru untuk labeling user
+apakah dia user baru dengan logic
+
+kalau customer-id <=2000 lama
+customer-id antara 2000-5000 sedang
+di atas 5000 lama
+
+```{r 16. Case when}
+
+```
+
+
+
+## Problem data numeric tapi data unique sedikit
+```{r}
+
+```
+
