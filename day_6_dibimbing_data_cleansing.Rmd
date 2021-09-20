@@ -1,0 +1,65 @@
+---
+title: "Day 7 Data Cleansing"
+author: "Dio Ariadi"
+date: "9/12/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+https://towardsdatascience.com/data-cleaning-with-r-and-the-tidyverse-detecting-missing-values-ea23c519bc62
+```{r}
+library(tidyverse)
+```
+
+Data Cleaning 
+
+1. Umumnya salah input.
+  - Dari harusnya angka ke huruf
+  - Dari harusnya puluhan keketik jadi ratusan
+2. Typo
+3. Format yang berbeda-beda untuk data kosong
+
+
+```{r 1. Panggil data}
+df <- read_csv("https://raw.githubusercontent.com/dataoptimal/posts/master/data%20cleaning%20with%20R%20and%20the%20tidyverse/telecom.csv")
+```
+```{r 2. examination the data}
+glimpse(df) ## sama kayak str(df)
+head(df)
+tail(df)
+```
+
+```{r 3. Intro pipeline}
+
+## nested
+log(sin(exp(2))) ## susah dibaca
+
+# piped functions lebih enak dibaca
+2 %>% exp() %>%
+  sin() %>%
+  log()
+
+```
+
+```{r 4. ulangi chunk 2 tapi pake pipe ya}
+
+df %>% head()
+df %>% tail()
+df %>% glimpse()
+
+
+
+```
+
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
