@@ -1,0 +1,339 @@
+---
+title: "WORKSHOP SSS 2021"
+author: "Dio"
+date: "10/2/2021"
+output: 
+  html_document: 
+    code_folding: hide
+    theme: sandstone
+---
+
+<style type="text/css">
+h1.title {
+  display:none;
+}
+
+h4.author { /* Header 4 - and the author and data headers use this too  */
+    display: none;
+}
+h4.date { /* Header 4 - and the author and data headers use this too  */
+   display: none;
+
+}
+</style>
+
+<br>
+<center>
+<a href="https://datawizart.com/"><img src="dw_logo-05.png" width=5%></a>
+</center>
+
+<H1>
+<center>
+WORKSHOP SSS 2021
+</center>
+</H1>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message=FALSE, warning=FALSE)
+```
+
+
+
+Outline:
+
+4. Workshop data visualisasi diakhiri dengan kesimpulan
+Pada sesi ini kawan-kawan akan menggunakan software [R](https://cran.r-project.org/bin/windows/base/R-4.1.1-win.exe) dan [Rstudio](https://download1.rstudio.org/desktop/windows/RStudio-2021.09.0-351.exe) dengan tambahan library tidyverse. Cara install `install.packages(c("tidyverse","plotly","crosstalk","reactable","lubridate","tidytext"))`
+
+Harapan setelah sesi ini:
+
+1. Secara singkat mengetahui fungsi-fungsi pada R dan tidyverse
+2. Mengetahui bagaimana harus bersikap dengan data pada saat menganalisa
+3. Membuat hipotesa sendiri dari data
+
+
+---------
+
+Berasumsi kita adalah analyst dealer mobil seluruh negara, sebagai seorang analyst kita ingin membantu bisnis semakin maju.
+
+Si pemilik bisnis menyuruh anda menganalisa tanpa guideline dan diberikan data mentah.
+Maka sebagai analyst yang dapat kita lakukan adalah:
+
+1. Exploratory data analysis (EDA)
+  - Bertujuan mengetahui ada kolom apa saja
+  - Mengetahui jumlah unik tiap kolom
+2. Dari kolom dan jenis data yang ada melakukan EDA
+3. Membuat analisa dan hipotesa
+4. Membuat kesimpulan dan mempresentasikan ke user/atasan
+5. Mengulang kembali langkah 3 bila ada pertanyaan follow up
+
+
+
+```{r load data, message=FALSE, warning=FALSE}
+# install.packages(c("tidyverse","plotly","crosstalk","reactable","lubridate","tidytext"))
+
+library(tidyverse)
+library(plotly)
+library(crosstalk)
+library(reactable)
+
+df <- read_csv("https://raw.githubusercontent.com/dioariadi/dibimbing/main/Cars%20Mock%20Data.csv")
+country_region <- read_csv("https://raw.githubusercontent.com/dioariadi/dibimbing/main/country-region%20-%20Sheet1.csv")
+country_region <- country_region %>%
+  mutate(Country = case_when(Country=="Russian Federation" ~ "Russia",
+                             Country=="Iran, Islamic Republic of" ~ "Iran",
+                             Country=="Korea, Democratic People's Republic of" ~ "North Korea",
+                             Country=="Korea, Republic of" ~ "South Korea",
+                             Country=="Congo, The Democratic Republic of the" ~ "Democratic Republic of the Congo",
+                             Country=="Syrian Arab Republic" ~ "Syria",
+                             Country=="Moldova, Republic of" ~ "Moldova",
+                             Country=="Côte D'Ivoire" ~ "Ivory Coast",
+                             TRUE ~ Country
+                             ))
+df <- df %>% left_join(country_region,by = c("Country"))
+
+```
+
+## Exploratory Data Analysis
+
+### Mengetahui isi dari tiap kolom
+```{r include=FALSE}
+df_crosstalk <- SharedData$new(df)
+```
+
+```{r echo=FALSE}
+reactable(data=df_crosstalk)
+```
+
+
+Diketahui terdapat 20 kolom dan 10ribu observasi/baris pada data.
+Namun terdapat data seperti tanggal masih dalam jenis character
+
+```{r}
+glimpse(df)
+```
+
+Merubah data tanggal dari karakter ke jenis data yang benar.
+Kemudian melihat distribusi data secara cepat menggunakan fungsi `summary`
+
+
+```{r merubah data character ke tanggal}
+df <- df %>% mutate(`Purchase Date`=as.Date(`Purchase Date`,"%d/%m/%Y"))
+
+summary(df)
+```
+
+Langkah selanjutnya cek data unik tiap kolom.
+Contoh kolom `Make` memiliki jumlah data unik sebanyak 75, atau kolom `Country` memiliki data unik sebanyak 199 artinya terdapat 199 negara pada data ini. 
+
+```{r cek jumlah unik data tiap kolom}
+sapply(df, function(x){length(unique(x))})
+```
+
+### Melakukan analisa berdasarkan satu kolom
+
+Setelah mengetahui beberapa kolom dan jenis datanya kita dapat menganalisa data ini.
+Pertanyaan paling sederhana dapat kita buat seperti:
+
+1. Jenis `Make`, `Buyer Gender`, dan `Country` apa yang paling banyak.
+2. Karena terdapat data tanggal kita juga dapat melihat trend per tahun/bulan.
+
+#### Merk apa yang paling banyak dibeli?
+
+Berdasarkan data dua teratas adalah Ford dan Chevrolet.
+
+```{r , fig.align='center',fig.height=10,fig.width=6}
+
+single_chart <- function(var){df %>% count({{var}}) %>% 
+  ggplot(aes(x=fct_reorder({{var}},n),y=n))+ # fct_reorder digunakan untuk sorting
+  geom_col(fill="#03b1fc")+
+  coord_flip()+ # digunakan untuk membuat vertical bar menjadi horizontal bar
+  theme_bw()}
+single_chart(Make)+labs(title = "Merk yang paling banyak dibeli",
+       subtitle = "Ford dan Chevrolet",x="Make")
+```
+
+```{r}
+single_chart(`Buyer Gender`)+labs(title = "Gender yang paling banyak beli",
+       subtitle = "Female",x="Gender")
+```
+
+#### Negara apa yang paling banyak beli?
+
+China dan Indonesia
+
+```{r,fig.align='center',fig.width=12,fig.height=7}
+df %>% count(Region,Country) %>% 
+  ggplot(aes(x=fct_reorder(Country,-n),y=n,fill=Region))+ # fct_reorder digunakan untuk sorting
+  geom_col()+
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = 90,hjust = 1,vjust=0.5),
+        legend.position = "none")+
+  labs(title = "Country yang paling banyak beli",
+       subtitle = "China, Indonesia",x="Country")
+
+```
+
+#### Negara apa yang paling banyak beli?
+
+Di zoom hanya top 20
+
+```{r}
+df %>%
+  count(Region,Country) %>% 
+  top_n(20) %>%  # ambil top 20
+  ggplot(aes(x=fct_reorder(Country,-n),y=n,fill=Region))+ # fct_reorder digunakan untuk sorting
+  geom_col()+
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = 90,hjust = 1,vjust=0.5))+
+  labs(title = "Country yang paling banyak beli",
+       subtitle = "China, Indonesia",x="Country")
+```
+```{r}
+df %>%
+  count(Region) %>% 
+  top_n(20) %>%  # ambil top 20
+  ggplot(aes(x=fct_reorder(Region,n),y=n))+ # fct_reorder digunakan untuk sorting
+  geom_col()+
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = 90,hjust = 1,vjust=0.5))+
+  labs(title = "Region yang paling banyak beli",
+       subtitle = "Asia & Pacific",x="Region")+
+  coord_flip()
+```
+
+
+### Trend tahunan penjualan mobil
+
+2020 turun
+
+```{r}
+df %>% mutate(year = lubridate::year(`Purchase Date`)) %>% 
+  count(year) %>% 
+  ggplot(aes(x=year,y=n))+
+  geom_line()+
+  theme_bw()
+```
+
+## Melihat data dengan menambahkan lebih dari satu dimensi dalam kasus ini data waktu dan merk/region
+
+#### Trend penjualan per merk 5 tahun terakhir?
+
+1. Apakah ada merk tertentu yang naik signifikan?
+2. Apakah ada merk tertentu yang turun signifikan?
+
+```{r message=FALSE, warning=FALSE}
+
+top_20_make <- df %>% 
+  group_by(Make) %>% 
+  summarise(sales = n()) %>% 
+  top_n(20) %>% pull(Make)
+
+df %>% 
+  group_by(year=lubridate::year(`Purchase Date`),Make) %>% 
+  summarise(sales = n()) %>% 
+  ungroup() %>% 
+  filter(Make %in% c(top_20_make) & year > 2001) %>% 
+  ggplot(aes(x=year,y=sales))+geom_line()+geom_smooth(method = "lm")+facet_wrap(~Make,scales = "free_y")
+  
+```
+
+
+### Trend penjualan tiap region
+
+1. Melihat trend per region, bagaimana bila di bagi per region?
+
+```{r}
+df %>% mutate(year = lubridate::year(`Purchase Date`)) %>% 
+  count(year,Region) %>% 
+  filter(year>2001) %>% 
+  ggplot(aes(x=year,y=n,color=Region))+
+  geom_line()+
+  geom_smooth(method = "lm")+
+  facet_wrap(~Region,scales = "free_y")+
+  theme_bw()
+```
+
+Setelah mengetahui beberapa fakta di atas kita dapat meneruskan untuk lebih detail pada negara yang menyumbangkan penjualan paling banyak dengan menggunakan pareto
+
+## Fokus pada dua negara penyumbang terbanyak dari segi jumlah penjualan
+
+
+### Diagram Pareto 
+
+80% dari seluruh penjualan dikontribusi oleh 33 negara, untuk memudahkan analisa workshop kali ini kita akan membatasi kepada top 6 negara yang berkontribusi sebesar 50% penjualan.
+
+```{r,fig.align='center',fig.width=12,fig.height=7}
+df %>% count(Region,Country) %>% 
+  arrange(-n) %>% 
+  mutate(cum_sum = cumsum(n),
+         pct_contribution = cum_sum/sum(n)) %>% 
+  ggplot(aes(x=fct_reorder(Country,pct_contribution),y=pct_contribution,fill=Region))+ # fct_reorder digunakan untuk sorting
+  geom_col()+
+  theme_bw()+
+  geom_hline(aes(yintercept = 0.8))+
+  geom_vline(aes(xintercept=33))+
+  theme(axis.text.x = element_text(angle = 90,hjust = 1,vjust=0.5),
+        legend.position = "none")+
+  labs(title = "Country yang paling banyak beli",
+       subtitle = "China, Indonesia",x="Country")
+```
+
+```{r}
+country_contribute_50_pct <- df %>% count(Region,Country) %>% 
+  arrange(-n) %>% 
+  mutate(cum_sum = cumsum(n),
+         pct_contribution = cum_sum/sum(n)) %>% 
+  filter(pct_contribution <=0.5) %>% pull(Country)
+
+
+```
+
+
+Hipotesa baru yang ingin diketahui adalah:
+
+1. Apakah Merk top untuk tiap negara berbeda-beda? Tujuannya bila berbeda maka merk tersebut dapat difokuskan pada negara tersebut.
+2. Bila mengetahui merk yang paling tinggi berapakah rentang harga mobil yang sebaiknya disiapkan pada beberapa negara tersebut? Tujuannya dengan mengetahui rentang harga jual spesifikasi mesin dapat disesuaikan.
+
+
+Untuk menjawab pertanyaan di atas:
+
+1. Pada gambar di bawah didapatkan ternyata merk Chevrolet dan Ford ada pada peringkat 1 dan 2 pada keenam negara ini
+
+```{r}
+library(tidytext)
+df %>% filter(Country %in% c(country_contribute_50_pct)) %>% 
+  count(Country,Make) %>% 
+  group_by(Country) %>% 
+  slice_max(order_by = n , n=10) %>% 
+  mutate(
+    # Country = as.factor(Country),
+    for_order =  reorder_within(x = Make,by = n,within = Country)) %>% 
+  ggplot(aes(x=for_order,y=n))+geom_col()+facet_wrap(~Country, scales = "free")+
+  coord_flip()+scale_x_reordered()
+
+```
+
+2. Pada gambar di bawah untuk merk Ford dan Chevrolet negara yang bersedia membayar mahal secara median adalah China, Russia, kemudian diikuti Indonesia. Taktik yang digunakan pada ketiga negara ini mungkin berbeda dengan negara seperti Poland.
+
+
+```{r}
+df %>% filter(Country %in% c(country_contribute_50_pct) & `Purchase Date`>as.Date("2009-12-31") & Make %in% c("Ford","Chevrolet")) %>% 
+  ggplot(aes(x=Country,y=`Sale Price`))+geom_jitter()+geom_boxplot(alpha=.5)
+```
+
+---------
+
+## Kesimpulan
+
+1. Sebagai analis kita harus melatih kepekaan terhadap jenis bisnis yang dilakukan. Hal ini dapat dilakukan dengan interaksi pada orang bisnis dan mempelajari langsung dengan data.
+
+2. Langkah awal yang bisa dilakukan adalah mempelajari data dilihat dari kolom yang tersedia beserta isi dari tiap kolom.
+
+3. Dengan mengetahui isi tiap kolom kita bisa dapat memulai bertanya atau membuat hipotesa.
+
+4. Pada kasus di atas menggunakan data penjualan mobil kita akhirnya mengetahui bahwa merk mobil yang paling banyak terjual adalah Ford dan Chevrolet. Kedua merk ini juga konsisten pada keenam negara yang menyumbang penjualan terbanyak. Dengan mengetahui hal ini analis dapat memberi sugesti untuk fokus memproduksi Ford dan Chevrolet lebih banyak sehingga harga produksi mungkin dapat lebih turun atau membangun pabrik disekitar kawasan asia.
+
+
+<br>
+
