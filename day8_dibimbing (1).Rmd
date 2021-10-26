@@ -1,0 +1,349 @@
+---
+title: "EDA Titanic"
+author: "Dio Ariadi"
+date: "7/13/2021"
+output: html_document
+---
+
+
+## EDA Titanic
+
+### Chunk 1. Memanggil library dan menarik data dari csv
+
+
+```{r 1.memanggil library dan menarik data titanic}
+library(tidyverse)
+df_titanic <- read_csv("https://raw.githubusercontent.com/dioariadi/dibimbing/main/train.csv")
+
+```
+### Chunk 2. Menggunakann fungsi basic dari materi sebelumnya 
+
+1. str
+2. summary
+3. dim
+
+```{r 2.Menggunakann fungsi basic dari materi sebelumnya}
+str(df_titanic)
+summary(df_titanic)
+dim(df_titanic)
+View(df_titanic)
+```
+
+```{r 2.1 untuk mendapatkan nilai unik tiap kolom}
+## tips ini digunakan utnuk mendapatkan nilai unik tiap kolom
+
+unique(df_titanic$Pclass)
+length(unique(df_titanic$Pclass))
+
+
+# kemudian fungsi diatas dirubah menjadi dibawah agar langsung otomatis ke apply
+# disemua kolom
+sapply(df_titanic, function(x) length(unique(x)))
+
+## coba cek ke https://www.kaggle.com/c/titanic/data?select=train.csv
+## apa definisi pclass
+```
+
+
+### Chunk 3. Menggunakan framework pada ppt, explore data category dahulu
+
+Menggunakan tipe data character
+
+```{r 3. Menggunakan framework pada ppt, explore data category dahulu}
+
+df_titanic %>% 
+  ggplot()+geom_bar(aes(x=Sex))
+
+
+## menggunakan bantuan factor untuk memindahkan male ke sebelah kiri
+df_titanic$Sex <- factor(df_titanic$Sex,levels = c("male","female"))
+
+df_titanic %>% 
+  ggplot()+geom_bar(aes(x=Sex))
+
+```
+Menggunakan data continuous dimana observasi uniknya hanya sedikit
+
+```{r 3.2 Mencoba melihat data continuous namun data unik hanya sedikit}
+
+df_titanic %>% 
+  ggplot()+geom_bar(aes(x=Parch))
+
+```
+Berikut contoh mendapatkan stacked bar dan pie chart
+
+```{r 3.3 Membuat stacked bar}
+df_titanic %>% count(Sex) %>% 
+  ggplot(aes(x="", y =n,fill=Sex))+ 
+  ## position="fill" digunakan untuk mendapatkan nilai persentase  
+  ## beberapa pilihan lainnya adalah dodge dan identity
+  geom_col(position = "fill")
+
+
+### pie chart opsional
+
+#df_titanic %>% count(Sex) %>% 
+#  ggplot(aes(x="", y=n, fill=Sex)) +
+#  geom_bar(stat="identity", width=1) +
+#  coord_polar("y", start=0)
+
+## 
+
+
+```
+```{r 3.4 Membuat fungsi agar fungsi stacked bar dpt digunakan untuk variable/kolom lain }
+
+### pastikan library rlang dan rversion terbaru
+
+graph_pct <- function(var_string)
+{df_titanic %>% count({{var_string}}) %>% 
+  ggplot(aes(x="", y =n,fill={{var_string}}))+ 
+  ## position="fill" digunakan untuk mendapatkan nilai persentase 
+  geom_col(position = "fill")}
+
+graph_pct(Pclass)
+df_titanic$Pclass <- factor(df_titanic$Pclass)
+graph_pct(Pclass)
+
+graph_pct(Survived)
+df_titanic$Survived <- factor(df_titanic$Survived)
+graph_pct(Survived)
+
+```
+```{r 3.5 Kombinasi dua variable categorical untuk menambah insight}
+
+df_titanic %>% count(Pclass,Sex) %>% 
+  ggplot(aes(x=Pclass,fill=Sex,y=n))+geom_col()
+```
+
+# Checkpoint 1 Kuis 
+
+## Data continuous 
+
+### Histogram
+
+Histogram minimal hanya perlu satu data numeric, digunakan untuk melihat distribusi dari data numeric
+
+Menggunakan data integer dan numeric
+
+
+```{r 4 Plot data numeric menggunakan histogram minimal hanya perlu satu data numeric}
+
+df_titanic %>% 
+  ggplot(aes(x=Age))+geom_histogram()
+
+```
+
+```{r 4.1 Plot menggunakan histogram dan merubah binwidth}
+df_titanic %>% 
+  ggplot(aes(x=Age))+geom_histogram(binwidth = 2)
+```
+
+
+```{r 4.1 Plot menggunakan histogram dan merubah opsi position}
+
+df_titanic %>% 
+  ggplot(aes(x=Age, fill=Survived))+geom_histogram(position = "identity",alpha=0.5)
+
+df_titanic %>% 
+  ## secara default histogram menggunakan position stack
+  ggplot(aes(x=Age, fill=Survived))+geom_histogram(position = "stack",alpha=0.5)
+
+
+df_titanic %>% 
+  ggplot(aes(x=Age, fill=Survived))+geom_histogram(binwidth = 10,position = "fill")
+
+```
+### Density
+
+Kurang lebih seperti histogram
+
+```{r 4.2 Plot menggunakan density }
+
+df_titanic %>% 
+  ggplot(aes(x=Age))+geom_density()
+
+df_titanic %>% 
+  ggplot(aes(x=Age,color=Survived))+geom_density()
+
+
+
+```
+### Scatter plot
+
+Minimal 2 data continuous
+untuk mengetahui relasi antar dua data continuous dapat menggunakan fungsi
+geom_smooth
+untuk mengetahui exact relasi menggunakan fungsi cor
+
+```{r 4.3 scatter plot harus minimal dua data continuous}
+
+df_titanic %>% 
+  ggplot(aes(x=Age,y=Fare))+geom_point()
+
+
+## untuk melihat relasi antar dua data continuous dapat menambahkan jenis plot
+## geom_smooth
+df_titanic %>% 
+  ggplot(aes(x=Age,y=Fare))+geom_point()+geom_smooth()
+
+cor(na.omit(df_titanic[,c('Age','Fare')]))
+
+```
+
+```{r 4.4 contoh kasus dimana 2 data numeric mungkin ada relasi}
+mtcars %>% 
+  ggplot(aes(x=mpg, y=wt))+
+  geom_point()+
+  geom_smooth()
+
+cor(mtcars[,c('mpg','wt')])
+```
+
+### Boxplot
+
+Minimal satu continuous
+alternatif dari cara melihat distribusi dengan cepat selain menggunakan histogram
+
+```{r 4.5 Boxplot itu bisa satu data continous atau 1 category & 1 continuous}
+
+df_titanic %>% 
+  ggplot(aes(y=Age))+geom_boxplot()
+
+## menambahkan informasi categorical
+df_titanic %>% 
+  ggplot(aes(x=Survived,y=Age))+geom_boxplot()
+
+## menabahkan jitter / violin
+
+df_titanic %>% 
+  ggplot(aes(x=Survived,y=Age))+
+  geom_boxplot()+
+  geom_jitter()
+
+df_titanic %>% 
+  ggplot(aes(x=Survived,y=Age))+
+  geom_boxplot()+
+  geom_violin(alpha=0.5)
+
+
+```
+
+
+### ggplotly agar grafik menjadi interaktif dapat di hover
+
+```{r 4.6 ggplotly}
+
+library(plotly)
+
+graph1 <- df_titanic %>% 
+  ggplot(aes(x=Survived,y=Age))+
+  geom_boxplot()
+# /+
+ # geom_jitter()
+
+
+ggplotly(graph1)
+
+```
+
+
+### Menggunakan metode untuk menambah insight
+
+1. Korelasi data numeric dengan cor
+2. Uji hipotesis untuk mengkonfirmasi, day statistic (p.value, t.test dkk)
+
+
+```{r 4.7 korelasi}
+#Membuat data frame baru yg berisikan data numeric
+
+df_titanic_numeric <- df_titanic[,c("Age","Fare","SibSp","Parch","PassengerId")]
+
+df_titanic_numeric <- na.omit(df_titanic_numeric)
+
+
+cor(df_titanic_numeric)
+```
+### Menggunakan t.test
+
+untuk melihat apakah ada perbedaan umur antara survived dan tidak
+
+```{r 4.8 menggunakan t.test}
+
+t.test(Age~Survived,df_titanic)
+
+```
+
+### Checkpoint 2
+
+Menggunakan data studio ghibli kita ingin melakukan beberapa eksplorasi
+
+1. Berapa jumlah data numeric?
+2. Plot apa yang sesuai untuk melihat hubungan antara imdb dan rt?
+3. Berapa nilai korelasi antara kolom imdb dan rt
+4. Menggunakan boxplot apakah terlihat ada perbedaan yang mencolok antara nilai kolom imdb yang directed_by_hayao_miyazaki = TRUE dengan FALSE?
+
+
+```{r 4.9 tugas checkpoint 2}
+df_ghibli <- read_csv("https://raw.githubusercontent.com/dioariadi/dibimbing/main/df_ghibli.csv")
+
+
+### menggunakan langkah2 di atas jawab pertanyaan pada situs yang akan diberikan saat kelas
+```
+
+### Assignment
+
+Buat rmakrdown baru
+dengan isian sebagai berikut
+
+---
+title: "Day 8 HW Titanic"
+author: "Nama teman2"
+date: "7/13/2021"
+output: html_document
+---
+
+copas pertanyaan di bawah ini
+
+Gunakan data titanic untuk menjawab minimal 4 hal di bawah.
+(Rubah jenis data kalau memang diperlukan, untuk menjawab pertanyaan harus dengan plot / nilai dari suatu metode)
+
+1. Bagaimana bentuk dari distribusi variable Fare? Apakah skew ke kiri atau ke kanan (arti skew bisa dilihat di https://www.statisticshowto.com/probability-and-statistics/skewed-distribution/) 
+
+<Jawaban>
+
+```{r Pertanyaan 1}
+df_titanic <- read_csv("https://raw.githubusercontent.com/dioariadi/dibimbing/main/train.csv")
+
+```
+
+2. Menggunakan plot histogram variable Fare rubah argumen binwidth dengan nilai-nilai sebagai berikut: 2,10,100,200.
+Menurut pendapat teman-teman angka mana yang sesuai sebagai input binwidth, beserta alasan?
+
+<Jawaban>
+
+```{r Pertanyaan 2}
+
+```
+
+3. Apakah semakin kecil nilai Pclass semakin tinggi Fare nya?
+Hint: mungkin akan kesulitan melihatnya, sehingga argumen yang diisi oleh Fare dapat ditambahkan 
+log10(Fare)
+
+<Jawaban>
+
+```{r Pertanyaan 3}
+
+```
+4. Jenis Embarked mana yang paling banyak? Berapa persen kontribusinya?
+
+<Jawaban>
+```{r Pertanyaan 4}
+
+```
+
+
+5. Buat satu hipotesa/pertanyaan sendiri berdasarkan data beserta plot / angka
+
+
+
