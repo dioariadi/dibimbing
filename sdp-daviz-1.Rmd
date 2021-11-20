@@ -1,0 +1,472 @@
+---
+title: "EDA Titanic"
+author: "Dio Ariadi"
+date: "7/13/2021"
+output: html_document
+---
+
+
+## EDA Titanic
+
+### Chunk 1. Memanggil library dan menarik data dari csv
+
+
+```{r 1.memanggil library dan menarik data titanic}
+library(tidyverse)
+df_titanic <- read_csv("https://raw.githubusercontent.com/dioariadi/dibimbing/main/train.csv")
+
+```
+### Chunk 2. Menggunakann fungsi basic dari materi sebelumnya 
+
+1. str
+2. summary
+3. dim
+
+```{r 2.Menggunakann fungsi basic dari materi sebelumnya}
+str(df_titanic)
+summary(df_titanic)
+dim(df_titanic)
+View(df_titanic)
+```
+
+```{r 2.1 untuk mendapatkan nilai unik tiap kolom}
+## tips ini digunakan utnuk mendapatkan nilai unik tiap kolom
+
+unique(df_titanic$Pclass)
+length(unique(df_titanic$Pclass))
+
+
+# kemudian fungsi diatas dirubah menjadi dibawah agar langsung otomatis ke apply
+# disemua kolom
+sapply(df_titanic, function(x) length(unique(x)))
+
+## coba cek ke https://www.kaggle.com/c/titanic/data?select=train.csv
+## apa definisi pclass
+```
+
+
+### Chunk 3. Menggunakan framework pada ppt, explore data category dahulu
+
+Menggunakan tipe data character
+
+```{r 3. Menggunakan framework pada ppt, explore data category dahulu}
+
+df_titanic %>% 
+  ggplot()+geom_bar(aes(x=Sex))
+
+ggplot(data = df_titanic)+
+  geom_bar(aes(x=Sex))
+
+ggplot(aes(x=Sex),data = df_titanic)+
+  geom_bar()
+
+
+
+## menggunakan bantuan factor untuk memindahkan male ke sebelah kiri
+df_titanic$Sex <- factor(df_titanic$Sex,levels = c("male","female"))
+
+df_titanic %>% 
+  ggplot()+geom_bar(aes(x=Sex))
+
+```
+
+### layer pertama
+
+```{r mencoba breakdown layer konsep}
+ggplot(aes(x=Sex),data = df_titanic)
+```
+
+### Layer kedua memberi info harus diapakan data tersebut
+
+Setelah memberi info tiap axis harus diisi apa maka harus menambahkan jenis grafik yang akan ditampilkan
+
+```{r}
+ggplot(aes(x=Sex),data = df_titanic)+
+  geom_bar() # 
+
+```
+
+
+Menggunakan data continuous dimana observasi uniknya hanya sedikit
+
+```{r 3.2 Mencoba melihat data continuous namun data unik hanya sedikit}
+
+df_titanic %>% 
+  ggplot()+geom_bar(aes(x=Parch))
+
+```
+Berikut contoh mendapatkan stacked bar dan pie chart
+
+```{r 3.3 Membuat stacked bar}
+df_titanic %>% count(Sex) %>% 
+  ggplot(aes(x="", y =n,fill=Sex))+ 
+  ## position="fill" digunakan untuk mendapatkan nilai persentase  
+  ## beberapa pilihan lainnya adalah dodge dan identity
+  geom_col(position = "fill")
+
+
+### pie chart opsional
+
+#df_titanic %>% count(Sex) %>% 
+#  ggplot(aes(x="", y=n, fill=Sex)) +
+#  geom_bar(stat="identity", width=1) +
+#  coord_polar("y", start=0)
+
+## 
+
+
+```
+```{r 3.4 Membuat fungsi agar fungsi stacked bar dpt digunakan untuk variable/kolom lain }
+
+### pastikan library rlang dan rversion terbaru
+
+graph_pct <- function(var_string)
+{df_titanic %>% count({{var_string}}) %>% 
+  ggplot(aes(x="", y =n,fill={{var_string}}))+ 
+  ## position="fill" digunakan untuk mendapatkan nilai persentase 
+  geom_col(position = "fill")}
+
+graph_pct(Pclass)
+df_titanic$Pclass <- factor(df_titanic$Pclass)
+graph_pct(Pclass)
+
+graph_pct(Survived)
+df_titanic$Survived <- factor(df_titanic$Survived)
+graph_pct(Survived)
+
+```
+
+```{r 3.5 Kombinasi dua variable categorical untuk menambah insight}
+
+df_titanic %>% count(Pclass,Sex) %>% 
+  ggplot(aes(x=Pclass,fill=Sex,y=n))+geom_col(position = "stack")
+```
+```{r coba ganti position}
+df_titanic %>% count(Pclass,Sex) %>% 
+  ggplot(aes(x=Pclass,fill=Sex,y=n))+
+  geom_col(position = "dodge")
+
+
+df_titanic %>% count(Pclass,Sex) %>% 
+  ggplot(aes(x=Pclass,fill=Sex,y=n))+
+  geom_col(position = "fill")
+
+
+df_titanic %>% count(Pclass,Sex) %>% 
+  ggplot(aes(x=Pclass,fill=Sex,y=n))+
+  geom_col(position = "identity",alpha=0.5)
+
+```
+
+# Checkpoint 1 Kuis 
+
+## Data continuous 
+
+### Histogram
+
+Histogram minimal hanya perlu satu data numeric, digunakan untuk melihat distribusi dari data numeric
+
+Menggunakan data integer dan numeric
+
+
+```{r 4 Plot data numeric menggunakan histogram minimal hanya perlu satu data numeric}
+
+df_titanic %>% 
+  ggplot(aes(x=Age))+geom_histogram()
+
+```
+
+```{r 4.1 Plot menggunakan histogram dan merubah binwidth}
+df_titanic %>% 
+  ggplot(aes(x=Age))+geom_histogram(binwidth = 2)
+```
+
+
+```{r 4.1 Plot menggunakan histogram dan merubah opsi position}
+
+df_titanic %>% 
+  ggplot(aes(x=Age, fill=Survived))+geom_histogram(position = "identity",alpha=0.5)
+
+df_titanic %>% 
+  ## secara default histogram menggunakan position stack
+  ggplot(aes(x=Age, fill=Survived))+geom_histogram(position = "stack",alpha=0.5)
+
+
+df_titanic %>% 
+  ggplot(aes(x=Age, fill=Survived))+geom_histogram(binwidth = 10,position = "fill")
+
+```
+### Density
+
+Kurang lebih seperti histogram
+
+```{r 4.2 Plot menggunakan density }
+
+df_titanic %>% 
+  ggplot(aes(x=Age))+geom_density()
+
+df_titanic %>% 
+  ggplot(aes(x=Age,color=Survived))+geom_density()
+
+
+
+```
+### Scatter plot
+
+Minimal 2 data continuous
+untuk mengetahui relasi antar dua data continuous dapat menggunakan fungsi
+geom_smooth
+untuk mengetahui exact relasi menggunakan fungsi cor
+
+geom_point juga punya argument size, color, dan shape
+
+```{r 4.3 scatter plot harus minimal dua data continuous}
+
+df_titanic %>% 
+  ggplot(aes(x=Age,y=Fare))+geom_point()
+
+
+## untuk melihat relasi antar dua data continuous dapat menambahkan jenis plot
+## geom_smooth
+df_titanic %>% 
+  ggplot(aes(x=Age,y=Fare))+geom_point()+geom_smooth()
+
+cor(na.omit(df_titanic[,c('Age','Fare')]))
+
+df_titanic %>% 
+  ggplot(aes(x=Age,y=Fare,color=Sex))+geom_point()
+
+df_titanic %>% 
+  ggplot(aes(x=Age,y=Fare,color=Sex,size=Age,shape=Embarked))+geom_point(alpha=0.4)
+
+
+```
+
+```{r 4.4 contoh kasus dimana 2 data numeric mungkin ada relasi}
+mtcars %>% 
+  ggplot(aes(x=mpg, y=wt))+
+  geom_point()+
+  geom_smooth()
+
+cor(mtcars[,c('mpg','wt')])
+```
+
+### Boxplot
+
+Minimal satu continuous
+alternatif dari cara melihat distribusi dengan cepat selain menggunakan histogram
+
+```{r 4.5 Boxplot itu bisa satu data continous atau 1 category & 1 continuous}
+
+df_titanic %>% 
+  ggplot(aes(y=Age))+geom_boxplot()
+
+## menambahkan informasi categorical
+df_titanic %>% 
+  ggplot(aes(x=Survived,y=Age))+geom_boxplot()
+
+## menabahkan jitter / violin
+
+df_titanic %>% 
+  ggplot(aes(x=Survived,y=Age))+
+  geom_boxplot()+
+  geom_jitter()
+
+df_titanic %>% 
+  ggplot(aes(x=Survived,y=Age))+
+  geom_boxplot()+
+  geom_violin(alpha=0.5)
+
+
+```
+
+
+
+### Menggunakan metode untuk menambah insight
+
+1. Korelasi data numeric dengan cor
+2. Uji hipotesis untuk mengkonfirmasi, day statistic (p.value, t.test dkk)
+
+
+```{r 4.7 korelasi}
+#Membuat data frame baru yg berisikan data numeric
+
+df_titanic_numeric <- df_titanic[,c("Age","Fare","SibSp","Parch","PassengerId")]
+
+df_titanic_numeric <- na.omit(df_titanic_numeric)
+
+
+cor(df_titanic_numeric)
+```
+### Menggunakan t.test
+
+untuk melihat apakah ada perbedaan umur antara survived dan tidak
+
+```{r 4.8 menggunakan t.test}
+
+t.test(Age~Survived,df_titanic)
+
+```
+
+### Checkpoint 2
+
+
+### Gghighlight
+
+Menghindari spaghetti chart menggunakan highlight dan facet_wrap (multiple graph) 
+
+```{r}
+
+library(gghighlight)
+
+df_covid <- read_csv("https://raw.githubusercontent.com/dioariadi/dibimbing/main/daily_covid_indo.csv")
+
+temp <- ggplot(aes(x=seq_),data = df_covid)+
+  geom_line(aes(y=casesroll_avg,group=province))+
+  gghighlight(province %in% c("DKI Jakarta","Jawa Barat"),label_params = list(size=3))+
+  scale_y_continuous(trans='log2',
+                     breaks=c(1,10,100,500,1000,5000,10000,25000,80000,120000))
+temp+geom_smooth(aes(y=casesroll_avg),data = heatmap_daily_indo)
+```
+```{r}
+temp
+```
+
+### Facet Wrap
+
+Multiple chart
+
+```{r}
+ggplot(aes(x=seq_),data = df_covid)+
+  geom_line(aes(y=casesroll_avg,group=province))+
+  scale_y_continuous(trans='log2',
+                     breaks=c(1,10,100,500,1000,5000,10000,25000,80000,120000))+
+  facet_wrap(~province)
+```
+
+### Facet grid
+
+```{r}
+ggplot(aes(x=seq_),data = df_covid)+
+  geom_line(aes(y=casesroll_avg,group=province))+
+  scale_y_continuous(trans='log2',
+                     breaks=c(1,10,100,500,1000,5000,10000,25000,80000,120000))+
+  facet_grid(.~province)
+```
+```{r}
+ggplot(aes(x=seq_),data = df_covid)+
+  geom_line(aes(y=casesroll_avg,group=province))+
+  scale_y_continuous(trans='log2',
+                     breaks=c(1,10,100,500,1000,5000,10000,25000,80000,120000))+
+  facet_grid(province~.)
+```
+
+```{r}
+ggplot(aes(x=seq_),data = df_covid)+
+  geom_line(aes(y=casesroll_avg,group=province))+
+  scale_y_continuous(trans='log2',
+                     breaks=c(1,10,100,500,1000,5000,10000,25000,80000,120000))+
+  facet_grid(province~.,rows = 3)
+```
+
+
+```{r}
+ggplot(aes(x=seq_),data = df_covid)+
+  geom_line(aes(y=casesroll_avg,group=province))+
+  scale_y_continuous(trans='log2',
+                     breaks=c(1,10,100,500,1000,5000,10000,25000,80000,120000))+
+  facet_wrap(~province)
+```
+
+### dumbbell 
+
+Tugas:
+
+1. Coba sebutkan ada berapa layer di grafik ini
+2. Coba non aktifkan beberapa layer dengan menggunakan hashtag
+
+```{r}
+
+library(ggalt)
+
+covid_vaccine <-as_tibble(data.frame(vaccine = c("Sinovac & Sinopharm","AstraZeneca","Moderna","Pfizer"),
+          bergejala_1 = c(0.59,0.60,0.506,0.524),
+          bergejala_2 = c(0.59,0.67,0.848,0.88),
+          rawatInap_1 = c(0.695,0.92,0.81,0.75),
+          rawatInap_2 = c(0.702,0.92,0.96,0.96))) %>% 
+  pivot_longer(cols = 2:5,names_to = "metric") %>% 
+    separate(metric,c("mencegah","level"),sep = "_") %>% 
+    pivot_wider(names_from = level,values_from = value) %>% 
+  rename("first"=`1`,"second"=`2`) %>% 
+  mutate(mencegah = case_when(mencegah == "bergejala" ~"Mencegah Bergejala",
+                              mencegah == "rawatInap" ~ "Mencegah Rawat Inap"),
+         label_ = paste(vaccine,mencegah),
+         text_label_1 = case_when(vaccine == "Sinovac & Sinopharm"  ~ paste(as.character((first*100)),"%",sep = ""),
+                                  TRUE ~ as.character((first)*100)),
+         text_label_2 = case_when(vaccine == "Sinovac & Sinopharm"  ~ paste(as.character((second*100)),"%",sep = ""),
+                                  TRUE ~ as.character((second)*100)),
+         line_1_end = first-0.1,
+         line_2_start = second + 0.1,
+         line_1_end = case_when(vaccine == "Sinovac & Sinopharm" & mencegah=="Mencegah Bergejala" ~ line_1_end +0.03,
+                                vaccine == "Sinovac & Sinopharm" & mencegah=="Mencegah Rawat Inap" ~ line_1_end -0.03,
+                                vaccine == "AstraZeneca" | (vaccine %in% c("Pfizer","Moderna") & mencegah=="Rawat Inap") ~ line_1_end +0.03,
+                                TRUE ~ line_1_end
+                                ),
+         line_2_start = case_when(vaccine == "Sinovac & Sinopharm" & mencegah=="Mencegah Bergejala" ~ line_2_start -0.03,
+                                vaccine == "Sinovac & Sinopharm" & mencegah=="Mencegah Rawat Inap" ~ line_2_start +0.03,
+                                vaccine == "AstraZeneca" | (vaccine %in% c("Pfizer","Moderna") & mencegah=="Mencegah Rawat Inap") ~ line_2_start -0.03,
+                                TRUE ~ line_2_start
+                                )
+         )
+
+graph_vaccine <- ggplot()+
+  ## start line
+  geom_segment(data=covid_vaccine, aes(y=vaccine, yend=vaccine, x=0, xend=line_1_end), color="#b2b2b2", size=0.15)+
+  ## end line
+  geom_segment(data=covid_vaccine, aes(y=vaccine, yend=vaccine, x=line_2_start, xend=1.15), color="#b2b2b2", size=0.15)+
+  ## dumbbell
+  geom_dumbbell(data = covid_vaccine, aes(y = vaccine,x=first,xend=second),
+                colour_x = "#2FC1B9",colour_xend = "#197770",color="#e3e2e1", size=2) +
+  
+  facet_wrap(~mencegah,nrow = 2)+
+  scale_x_continuous(labels = scales::percent,expand=c(0,0), limits=c(0, 1.175))+
+  ## text label
+  geom_text(data=(covid_vaccine %>% filter((vaccine=="Sinovac & Sinopharm" & mencegah=="Mencegah Bergejala") |
+                                             (vaccine=="AstraZeneca" & mencegah=="Mencegah Rawat Inap"))), 
+            aes(x=first, y=vaccine, label=(text_label_1)),
+          color="#197770", size=2.75, vjust=2.5)+
+  geom_text(data=(covid_vaccine %>% filter(!(vaccine=="Sinovac & Sinopharm" & mencegah=="Mencegah Bergejala")&
+                                             !(vaccine=="AstraZeneca" & mencegah=="Mencegah Rawat Inap") )), 
+            aes(x=first, y=vaccine, label=(text_label_1)),
+          color="#2FC1B9", size=2.75, hjust=1.8)+
+  geom_text(data=(covid_vaccine %>% filter(first !=second)), aes(x=second, y=vaccine, label=(text_label_2)),
+          color="#197770", size=2.75, hjust=-.8)+theme_bw()+
+  theme(
+  # text = element_text(family = "Open Sans"),
+  panel.grid.major=element_blank(),
+  panel.grid.minor=element_blank(),
+  panel.border=element_blank(),
+  axis.ticks=element_blank(),
+  axis.text.x=element_blank(),
+  axis.text.y.left = element_text(size=10),
+  plot.title=element_text(size = 14, face="bold"),
+  plot.title.position = "plot",
+  plot.subtitle=element_text(size=12),
+  plot.caption=element_text(size=8, margin=margin(t=12), color="#7a7d7e"),
+  strip.background = element_blank(),
+  # strip.text = element_textbox(
+  #     size = 10,
+  #     color = "white", fill = "#2FC1B9", box.color = NULL,
+  #     halign = 0.5, linetype = 1, r = unit(2, "pt"), width = unit(1, "npc"),
+  #     padding = margin(2, 0, 1, 0), margin = margin(3, 3, 3, 3)
+  #   )
+)+
+  labs(x=NULL, y=NULL, title="Efektivitas Vaksin Covid-19 terhadap varian Delta",
+       subtitle="Untuk jenis vaksin yang tersedia di Indonesia",
+       caption="Sumber ringkasan dari @adamprabata | https://www.instagram.com/p/CS_ddQ_BghY/
+                Grafik dibuat oleh @data_wizart | Dio Ariadi")
+graph_vaccine
+```
+
+
+[More complex chart](http://datawizart.com/r/revamp-chart-happiness-index-by-revou/)
