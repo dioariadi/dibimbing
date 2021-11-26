@@ -1,0 +1,140 @@
+---
+title: "Membuat html interactive"
+author: "Dio"
+date: "11/26/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Membuat html dengan chart interactive
+
+```{r message=FALSE, warning=FALSE}
+library(highcharter)
+library(tidyverse)
+df_covid <- read_csv("https://raw.githubusercontent.com/dioariadi/dibimbing/main/daily_covid_indo.csv")
+df_titanic <- read_csv("https://raw.githubusercontent.com/dioariadi/dibimbing/main/train.csv")
+
+```
+
+### Menggunakan library highcharter
+
+```{r scatter plot}
+hchart(mpg, "point", hcaes(x = displ, y = cty, group = year))
+```
+
+```{r scatter plot 2}
+hchart(mpg, "point", hcaes(x = displ, y = cty, group = cyl))
+```
+
+
+
+### Menggunakan tab {.tabset}
+
+Ketik `{.tabset}` pada ###
+
+#### scatter plot 1
+
+```{r}
+hchart(mpg, "point", hcaes(x = displ, y = cty, group = year))
+```
+
+#### Vertical Bar chart
+
+```{r}
+
+mpg %>% count(class,sort = TRUE ) %>% 
+  hchart("column", hcaes(x = class, y = n))
+```
+
+#### Horizontal Bar chart
+
+```{r}
+
+mpg %>% count(class,year,sort = TRUE ) %>% 
+  hchart("column", hcaes(x = class, y = n,group=year))
+```
+
+
+### {.tabset}
+
+Default mereka akan selalu side by side
+Kalau mau buat stacked agak ribet ya..
+
+
+```{r}
+mpg_stacked <- mpg %>% count(class,year,sort = TRUE ) %>% 
+  pivot_wider(names_from = year,values_from = n) %>% 
+  rename(thn_2018=`2008`,
+         thn_1999=`1999`)
+
+highchart() %>% 
+  hc_chart(type = "column") %>%
+  hc_plotOptions(column = list(stacking = "normal")) %>%
+  hc_xAxis(categories = mpg_stacked$class) %>%
+  hc_add_series(name="1999",
+                data = mpg_stacked$thn_1999,
+                stack = "Class") %>%
+  hc_add_series(name="2008",
+                data = mpg_stacked$thn_2018,
+                stack = "Class") 
+# %>% 
+  # hc_add_theme(hc_theme_ft())
+```
+
+
+### Line chart
+
+```{r}
+hchart(df_covid,type ="line",hcaes(x=seq_,y=casesroll_avg,group=province))
+```
+
+### Boxplot
+
+```{r}
+dat <- data_to_boxplot(pokemon, height, type_1, name = "height in meters")
+
+highchart() %>%
+hc_xAxis(type = "category") %>%
+hc_add_series_list(dat)
+
+```
+
+### Chart lain2
+
+#### Sankey
+
+```{r}
+df_titanic_sankey <- df_titanic %>% 
+  select(Sex,Pclass,Survived) %>% 
+  mutate(Survived = if_else(Survived==1,"Survived","Die"))
+
+data_to_sankey(df_titanic_sankey)
+hchart(data_to_sankey(df_titanic_sankey), "sankey", name = "Titanic Survived")
+
+```
+
+```{r}
+
+data(gapminder, package = "gapminder")
+
+gapminder_2007 <- gapminder::gapminder %>% 
+    filter(year  == max(year)) %>% 
+    mutate(pop_mm = round(pop/1e6))
+
+dout <- data_to_hierarchical(gapminder_2007, c(continent, country), pop_mm)
+
+hchart(dout, type = "sunburst")
+
+```
+
+
+```{r}
+hchart(dout, type = "treemap")
+```
+
+Klik knit 
+
+

@@ -1,0 +1,259 @@
+---
+title: "sdp-daviz-2"
+author: "Dio"
+date: "11/3/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Main theme
+
+1. Merubah warna dan sorting ascending dan descending
+2. Memberi highlight untuk fokus pada yang penting
+3. Multiple small chart
+4. Interactive chart
+
+
+
+### Merubah warna data categorical 
+
+```{r}
+library(tidyverse)
+library(plotly)
+library(highcharter) ## untuk chart
+df_titanic <- read_csv("https://raw.githubusercontent.com/dioariadi/dibimbing/main/train.csv")
+
+```
+
+
+Color memberi warna outline
+fill memberi warna di dalam
+
+```{r}
+ggplot(aes(x=as.factor(Survived),y=Age,color=as.factor(Survived)),data = df_titanic)+
+  geom_boxplot()+
+  geom_jitter()+
+  scale_color_manual(values = c("grey","blue")) # menyesuaikan fill atau color
+```
+
+
+```{r}
+ggplot(aes(x=as.factor(Survived),y=Age,fill=as.factor(Survived)),data = df_titanic)+
+  geom_boxplot()+
+  geom_jitter()+
+  scale_fill_manual(values = c("grey","blue")) # menyesuaikan fill atau color
+
+```
+
+### Cara sorting dan memberi warna
+
+```{r}
+df_titanic_embarked <- df_titanic %>% 
+  count(Embarked) %>% 
+  filter(is.na(Embarked)==FALSE) ## buang missing value
+
+ggplot(aes(x=Embarked,y=n),data = df_titanic_embarked)+
+  geom_col()
+```
+### memberi warna dan sorting
+
+```{r}
+ggplot(aes(x=fct_reorder(Embarked,n),y=n,fill=n),data = df_titanic_embarked)+
+  geom_col()+
+  coord_flip()+
+  scale_fill_viridis_c()
+
+ggplot(aes(x=fct_reorder(Embarked,n),y=n,fill=n),data = df_titanic_embarked)+
+  geom_col()+
+  coord_flip()+
+  scale_fill_continuous(type = "viridis")
+
+
+ggplot(aes(x=fct_reorder(Embarked,n),y=n,fill=n),data = df_titanic_embarked)+
+  geom_col()+
+  coord_flip()+
+  scale_fill_gradient(low = "red",high = "blue")
+
+
+```
+
+### Memberi warna bila warna berdasarkan categori/discrete
+
+```{r}
+ggplot(aes(x=fct_reorder(Embarked,n),y=n,fill=Embarked),data = df_titanic_embarked)+
+  geom_col()+
+  coord_flip()+
+  scale_fill_manual(values = c("red","yellow","green"))
+
+ggplot(aes(x=fct_reorder(Embarked,n),y=n,fill=Embarked),data = df_titanic_embarked)+
+  geom_col()+
+  coord_flip()+
+  scale_fill_manual(values = c("#1f9150","#116b8f","#751e3a"))
+```
+
+```{r}
+ggplot(aes(x=fct_reorder(Embarked,n),y=n,fill=Embarked),data = df_titanic_embarked)+
+  geom_col()+
+  coord_flip()+
+  scale_fill_manual(values = c("#1f9150","#116b8f","#751e3a"))+
+  theme_bw()
+
+ggplot(aes(x=fct_reorder(Embarked,n),y=n,fill=Embarked),data = df_titanic_embarked)+
+  geom_col()+
+  coord_flip()+
+  scale_fill_manual(values = c("#1f9150","#116b8f","#751e3a"))+
+  theme_minimal()+
+  labs(x = "Total Passenger",
+       y = "Embarked",
+       title = "Jumlah Penumpang berdasarkan embarked",
+       subtitle = "Data Titanic",
+       caption = "Ini tulisan panjang\nIni dibreak")
+
+
+
+```
+
+```{r}
+ggplot(aes(x=fct_reorder(Embarked,n),y=n,fill=Embarked),data = df_titanic_embarked)+
+  geom_col()+
+  geom_text(aes(label=n),vjust=1.2,color="white",angle=270)+
+  coord_flip()+
+  scale_fill_manual(values = c("#1f9150","#116b8f","#751e3a"))+
+  theme_minimal()+
+  labs(x = "Total Passenger",
+       y = "Embarked",
+       title = "Jumlah Penumpang berdasarkan embarked",
+       subtitle = "Data Titanic",
+       caption = "Ini tulisan panjang\nIni dibreak")
+
+
+ggplot(aes(x=fct_reorder(Embarked,n),y=n,fill=Embarked),data = df_titanic_embarked)+
+  geom_col()+
+  geom_text(aes(label=n),hjust=1.2,color="white")+
+  coord_flip()+
+  scale_fill_manual(values = c("#1f9150","#116b8f","#751e3a"))+
+  theme_minimal()+
+  labs(x = "Total Passenger",
+       y = "Embarked",
+       title = "Jumlah Penumpang berdasarkan embarked",
+       subtitle = "Data Titanic",
+       caption = "Ini tulisan panjang\nIni dibreak")
+```
+
+```{r}
+
+ggplot(aes(x=fct_reorder(Embarked,n),y=n,fill=Embarked),data = df_titanic_embarked)+
+  geom_col()+
+  geom_text(aes(label=n),hjust=1.2,color="white")+
+  coord_flip()+
+  scale_fill_manual(values = c("#1f9150","#116b8f","#751e3a"))+
+  theme_minimal()+
+  labs(x = "Total Passenger",
+       y = "Embarked",
+       title = "Jumlah Penumpang berdasarkan embarked",
+       subtitle = "Data Titanic",
+       caption = "Ini tulisan panjang\nIni dibreak")+
+  annotate("text",x = 2.3,y=300,label="Ini annotate\nSemangat ya pasti pusing",hjust=0)
+```
+
+
+
+## Coba hilangkan argument group apa yang terjadi
+
+```{r}
+ggplot(aes(x=seq_),data = df_covid)+
+  geom_line(aes(y=casesroll_avg,group=province))
+```
+
+### Multiple small chart
+
+```{r}
+ggplot(aes(x=seq_),data = df_covid)+
+  geom_line(aes(y=casesroll_avg,group=province))+
+  scale_y_continuous(trans='log2',
+                     breaks=c(1,10,100,500,1000,5000,10000,25000,80000,120000))+
+  facet_wrap(~province)
+```
+```{r}
+ggplot(aes(x=seq_),data = df_covid)+
+  geom_line(aes(y=casesroll_avg,group=province))+
+  scale_y_continuous(trans='log2',
+                     breaks=c(1,10,100,500,1000,5000,10000,25000,80000,120000))+
+  facet_grid(.~province)
+```
+```{r}
+ggplot(aes(x=seq_),data = df_covid)+
+  geom_line(aes(y=casesroll_avg,group=province))+
+  scale_y_continuous(trans='log2',
+                     breaks=c(1,10,100,500,1000,5000,10000,25000,80000,120000))+
+  facet_grid(province~.)
+
+```
+
+
+### Menggunakan highlight
+
+```{r}
+library(gghighlight)
+
+df_covid <- read_csv("https://raw.githubusercontent.com/dioariadi/dibimbing/main/daily_covid_indo.csv")
+
+ggplot(aes(x=seq_),data = df_covid)+
+  geom_line(aes(y=casesroll_avg,group=province))+
+  gghighlight(label_key = province,use_direct_label = FALSE)+
+  scale_y_continuous(trans='log2',
+                     breaks=c(1,10,100,500,1000,5000,10000,25000,80000,120000))+
+  facet_wrap(~province)
+```
+```{r}
+
+df_covid <- mutate(df_covid,province=fct_reorder(province,-casesroll_avg))
+ggplot(aes(x=seq_),data = df_covid)+
+  geom_line(aes(y=casesroll_avg,group=province))+
+  gghighlight(label_key = province,use_direct_label = FALSE)+
+  scale_y_continuous(trans='log2',
+                     breaks=c(1,10,100,500,1000,5000,10000,25000,80000,120000))+
+  facet_wrap(~province)
+
+```
+
+
+```{r cars}
+# install.packages("networkD3")
+# library(networkD3)
+# install.packages("highcharter")
+
+```
+
+### GGPLOTLY
+
+Catatan bila ingin membentuk html menggunakan fungsi ggplotly maka gunakan crosstalk
+https://rstudio.github.io/crosstalk/
+
+
+
+```{r}
+### ggplotly agar grafik menjadi interaktif dapat di hover
+
+library(tidyverse)
+library(plotly)
+df_titanic <- read_csv("https://raw.githubusercontent.com/dioariadi/dibimbing/main/train.csv")
+
+graph1 <- df_titanic %>% 
+  ggplot(aes(x=as.factor(Survived),y=Age,fill=as.factor(Survived)))+
+  geom_boxplot()+
+  scale_fill_discrete(c("red","blue"))
+# /+
+ # geom_jitter()
+
+
+ggplotly(graph1)
+
+```
+
+
+
+
